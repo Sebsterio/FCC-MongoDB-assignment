@@ -10,7 +10,7 @@ const mongoURI =
 	"mongodb+srv://admin:Mordoklej1@fcc-to5px.mongodb.net/test?retryWrites=true&w=majority";
 mongoose.connect(mongoURI, { useNewUrlParser: true, useUnifiedTopology: true });
 
-// ---------- Middleware ----------
+// ------------------------------ Middleware ------------------------------
 
 // Enable CORS so that your API is remotely testable by FCC
 const cors = require("cors");
@@ -21,10 +21,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
 // Static files
-app.use(express.static("public"));
-app.get("/", (req, res) => {
-	res.sendFile(__dirname + "/views/index.html");
-});
+app.use(express.static(__dirname + "/public"));
 
 // Not found middleware
 // app.use((req, res, next) => {
@@ -49,7 +46,14 @@ app.use((err, req, res, next) => {
 	res.status(errCode).type("txt").send(errMessage);
 });
 
-// ---------- Timestamp microservice ----------
+// ------------------------------ Routes ------------------------------
+
+// Root
+app.get("/", (req, res) => {
+	res.sendFile(__dirname + "/views/index.html");
+});
+
+// ------------------------------ Timestamp microservice ------------------------------
 
 app.get("/api/timestap/", function (req, res) {
 	const date = new Date();
@@ -63,7 +67,7 @@ app.get("/api/timestap/:date_string", function (req, res) {
 	res.json({ unix: date.getTime(), utc: date.toUTCString() });
 });
 
-// ---------- WhoAmI microservice ----------
+// ------------------------------ WhoAmI microservice ------------------------------
 
 app.get("/api/whoami", function (req, res) {
 	const ipaddress = req.ip;
@@ -72,7 +76,7 @@ app.get("/api/whoami", function (req, res) {
 	res.json({ ipaddress, language, software });
 });
 
-// ---------- URL shortener ----------
+// ------------------------------ URL shortener ------------------------------
 
 const urlSchema = new mongoose.Schema({
 	original_url: String,
@@ -125,28 +129,22 @@ app.get("/api/shorturl/:short_url", (req, res) => {
 		});
 });
 
-// ---------- Exercise Tracker ----------
+// ------------------------------ Exercise Tracker ------------------------------
 
 const userSchema = new mongoose.Schema({
 	username: String,
 	userId: String,
+	count: Number,
 	log: [
 		{
 			description: String,
-			duration: String,
-			date: Date,
+			duration: Number,
+			date: String,
 		},
 	],
 });
 
 const User = mongoose.model("User", userSchema);
-
-// aux
-function dateFromString(str) {
-	if (!str) return new Date();
-	const date = str.split("-");
-	return new Date(date[0], date[1], date[2]);
-}
 
 // POST new user
 app.post("/api/exercise/new-user", (req, res) => {
@@ -164,7 +162,7 @@ app.post("/api/exercise/new-user", (req, res) => {
 app.get("/api/exercise/users", (req, res) => {
 	User.find()
 		.then((users) => {
-			res.json({ users });
+			res.json(users);
 		})
 		.catch((err) => res.send(err));
 });
@@ -173,44 +171,81 @@ app.get("/api/exercise/users", (req, res) => {
 app.post("/api/exercise/add", (req, res) => {
 	let { userId, description, duration, date } = req.body;
 
-	date = dateFromString(date);
+	duration = parseInt(duration);
+	if (date) date = new Date(date).toDateString();
+	else date = new Date().toDateString();
 
 	User.findById(userId, (error, user) => {
 		if (error) return res.json({ error });
-		user.log.push({ userId, description, duration, date });
+		user.log.push({
+			description,
+			duration,
+			date,
+		});
 		user.save().then((user) => {
-			res.json(user);
+			res.json({
+				username: user.username,
+				_id: user._id,
+				description,
+				duration,
+				date,
+			});
 		});
 	});
 });
 
 // GET /api/exercise/log?{userId}[&from][&to][&limit]
 app.get("/api/exercise/log", (req, res) => {
-	const { userId, from, to, limit } = req.query;
+	let { userId, from, to, limit } = req.query;
 
-	if (from) from = dateFromString(from).getTime();
-	if (to) to = dateFromString(to).getTime();
+	if (from) from = new Date(from).getTime();
+	if (to) to = new Date(to).getTime();
 	if (limit) limit = Number(limit);
-
-	console.log(userId, from, to, limit);
 
 	User.findById(userId)
 		.then((user) => {
-			user.userId = user.id;
-			user.count = user.log.length;
-			user.log = user.log.filter((entry) => {
-				console.log(entry.date.getTime(), from, to);
+			const count = user.log.length;
 
-				const isFrom = from ? entry.date.getTime() >= from : true;
-				const isTo = to ? entry.date.getTime() <= to : true;
-				return isFrom && isTo;
+			let log = user.log
+				.filter((entry) => {
+					const entryDate = new Date(entry.date).getTime();
+					if (from && entryDate < from) return false;
+					if (to && entryDate > to) return false;
+					return true;
+				})
+				.map((entry) => ({
+					description: entry.description,
+					duration: entry.duration,
+					date: entry.date,
+				}));
+
+			if (limit && count > limit) log.length = limit;
+
+			res.json({
+				userId: user._id,
+				username: user.username,
+				count,
+				log,
 			});
-			if (limit && count > limit) user.log.length = limit;
-
-			res.json(user);
 		})
 		.catch((err) => res.json({ err }));
 });
+
+// ------------------------------ File Metadata ------------------------------
+
+const multer = require("multer");
+
+const upload = multer({ dest: "uploads/" });
+
+app.post("/api/fileanalyse", upload.single("upfile"), (req, res) => {
+	const name = req.file.originalname;
+	const type = req.file.mimetype;
+	const size = req.file.size;
+
+	res.json({ name, type, size });
+});
+
+// {"name":".nojekyll","type":"application/octet-stream","size":0}
 
 // ====================================================================
 

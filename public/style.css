@@ -1,62 +1,51 @@
-* {
-	box-sizing: border-box;
-}
-
 body {
-	font-family: sans-serif;
-	margin: 25px;
+	font-family: "Roboto", sans-serif;
+	font-size: 16px;
 	color: #222;
-	background-color: #f5f5f5;
+	background-color: #ecf0f1;
+	text-align: center;
 }
 
-h1 {
-	font-weight: bold;
+.container {
+	padding: 0;
+	margin-top: 40px;
 }
 
-.bold {
-	font-weight: bold;
+.footer {
+	margin-top: 60px;
 }
 
-p {
-	max-width: 900px;
+ol {
+	list-style-position: inside;
+}
+ul {
+	list-style-type: none;
 }
 
-form {
-	margin-bottom: 25px;
-	padding: 15px;
-	background-color: #87d37c;
-	display: inline-block;
-	width: 100%;
-	max-width: 340px;
-	border-radius: 5px;
+a {
+	color: #2574a9;
 }
 
 input {
 	display: block;
-	margin-bottom: 10px;
-	padding: 5px;
-	width: 100%;
-	border: 1px solid lightgrey;
-	border-radius: 3px;
-	font-size: 16px;
+	position: relative;
+	margin: 10px auto;
 }
-
-input[type="submit"] {
-	font-size: 16px;
-	border-radius: 3px;
-	background-color: #e4f1fe;
-	border: 1px solid grey;
-	box-shadow: 2px 2px #999;
-	cursor: pointer;
+input#button {
+	width: 230px;
 }
-
-input[type="submit"]:hover {
-	background-color: #fffec4;
+.view {
+	position: relative;
+	margin: auto;
+	margin-top: 40px;
+	border: 1px solid #aaa;
+	padding: 20px;
+	width: 60%;
+	min-width: 400px;
 }
+/****** Logo Div Styling ******/
 
-code {
-	font-family: monospace;
-	font-size: 1.2em;
-	background-color: #fffec4;
-	padding: 2px;
+img {
+	margin: 20px auto 0 auto;
+	display: block;
 }
